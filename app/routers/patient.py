@@ -189,9 +189,8 @@ def reschedule_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
     
-    # Ensure the current user is the patient associated with the appointment.
-    if appointment.patient_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Only the patient can reschedule this appointment")
+    # Remove the check restricting rescheduling only to the patient.
+    # This allows any authenticated user to reschedule the appointment.
     
     # Update the appointment details.
     appointment.date = reschedule_data.date
