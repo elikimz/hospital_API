@@ -32,6 +32,18 @@ def get_db():
     finally:
         db.close()
 
+# Helper function to calculate the patient's bill (implement logic based on your system)
+def calculate_patient_bill(patient_id: int, db: Session) -> float:
+    # Example calculation based on prescriptions, appointments, etc.
+    prescriptions = db.query(model.Prescription).filter(model.Prescription.patient_id == patient_id).all()
+    appointment_fees = 0  # Example of appointment fees calculation
+
+    total_bill = appointment_fees
+    for prescription in prescriptions:
+        total_bill += prescription.medicine.price  # Add the medicine price for each prescription
+
+    return total_bill
+
 # Create Stripe Checkout Session
 @router.post("/payments/create-checkout-session/")
 async def create_checkout_session(db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
@@ -39,9 +51,14 @@ async def create_checkout_session(db: Session = Depends(get_db), current_user: m
     
     # Fetch the patient associated with the current authenticated user
     patient = db.query(model.Patient).filter(model.Patient.user_id == current_user.id).first()
-    print(f"Patient found: {patient}")
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Calculate the patient's total bill dynamically
+    patient_total_bill = calculate_patient_bill(patient.id, db)
+    if patient_total_bill <= 0:
+        raise HTTPException(status_code=400, detail="Invalid bill amount")
+
     # Create Stripe checkout session
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
@@ -49,19 +66,19 @@ async def create_checkout_session(db: Session = Depends(get_db), current_user: m
             "price_data": {
                 "currency": "usd",
                 "product_data": {"name": "Hospital Payment"},
-                "unit_amount": 5000,  # Example amount, can be dynamic
+                "unit_amount": int(patient_total_bill * 100),  # Convert to cents
             },
             "quantity": 1,
         }],
         mode="payment",
-        success_url="https://your-frontend.com/success",
-        cancel_url="https://your-frontend.com/cancel",
+        success_url=f"https://your-frontend.com/payment-success/{patient.id}",
+        cancel_url=f"https://your-frontend.com/payment-failed/{patient.id}",
     )
 
     # Save payment record in the database
     new_payment = model.Payment(
         patient_id=patient.id,
-        amount=50.00,  # Example amount
+        amount=patient_total_bill,
         stripe_session_id=session.id,
         status=model.PaymentStatus.PENDING,
     )
@@ -95,6 +112,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             # Find the patient associated with the payment
             patient = db.query(model.Patient).filter(model.Patient.id == payment.patient_id).first()
             if patient:
-                print(f"Patient Details: ID={patient.id}, Name={patient.full_name}, Contact={patient.contact}")
+                print(f"Payment successful for Patient: ID={patient.id}, Name={patient.full_name}, Contact={patient.contact}")
     
     return {"status": "success"}

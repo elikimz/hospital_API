@@ -1,91 +1,84 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import model, schema, database
+from app import model
+from app.database import get_db
 from app.auth import get_current_user
-from app.model import UserRole
+from app.schema import MedicineCreate, MedicineOut
 
 router = APIRouter()
 
-def get_db():
-    db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# ✅ Get all medicines
-@router.get("/", response_model=list[schema.MedicineResponse])
-def get_all_medicines(
-    db: Session = Depends(get_db), 
+# Add a new medicine
+@router.post("/medicines/", response_model=MedicineOut)
+async def add_medicine(
+    medicine: MedicineCreate,
+    db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user)
 ):
-    medicines = db.query(model.Medicine).all()
-    return medicines
+    # Ensure only pharmacists or admins can add medicine
+    if current_user.role not in [model.UserRole.PHARMACIST, model.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only pharmacists or admins can add medicines.")
 
-# ✅ Add a new medicine
-@router.post("/", response_model=schema.MedicineResponse, status_code=status.HTTP_201_CREATED)
-def add_medicine(
-    medicine: schema.MedicineCreate, 
-    db: Session = Depends(get_db), 
-    current_user: model.User = Depends(get_current_user)
-):
-    if current_user.role not in [UserRole.ADMIN, UserRole.PHARMACIST]:
-        raise HTTPException(status_code=403, detail="Only admins or pharmacists can add medicines")
-
-    new_medicine = model.Medicine(**medicine.model_dump())
+    new_medicine = model.Medicine(
+        name=medicine.name,
+        # description=medicine.description,
+        price=medicine.price,
+        stock=medicine.stock
+    )
     db.add(new_medicine)
     db.commit()
     db.refresh(new_medicine)
     return new_medicine
 
-# ✅ Get medicine details
-@router.get("/{id}", response_model=schema.MedicineResponse)
-def get_medicine(
-    id: int, 
-    db: Session = Depends(get_db), 
-    current_user: model.User = Depends(get_current_user)
-):
+# Retrieve all medicines
+@router.get("/medicines/", response_model=list[MedicineOut])
+async def get_all_medicines(db: Session = Depends(get_db)):
+    medicines = db.query(model.Medicine).all()
+    return medicines
+
+# Retrieve a single medicine
+@router.get("/medicines/{id}", response_model=MedicineOut)
+async def get_medicine(id: int, db: Session = Depends(get_db)):
     medicine = db.query(model.Medicine).filter(model.Medicine.id == id).first()
     if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
+        raise HTTPException(status_code=404, detail="Medicine not found.")
     return medicine
 
-# ✅ Update medicine stock
-@router.put("/{id}", response_model=schema.MedicineResponse)
-def update_medicine(
-    id: int, 
-    update_data: schema.MedicineUpdate,  # Use MedicineUpdate schema for partial updates
-    db: Session = Depends(get_db), 
+# Update a medicine
+@router.put("/medicines/{id}", response_model=MedicineOut)
+async def update_medicine(
+    id: int,
+    medicine: MedicineCreate,
+    db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user)
 ):
-    if current_user.role not in [UserRole.ADMIN, UserRole.PHARMACIST]:
-        raise HTTPException(status_code=403, detail="Only admins or pharmacists can update medicine details")
+    # Ensure only pharmacists or admins can update medicines
+    if current_user.role not in [model.UserRole.PHARMACIST, model.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only pharmacists or admins can update medicines.")
 
-    medicine = db.query(model.Medicine).filter(model.Medicine.id == id).first()
-    if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
+    existing_medicine = db.query(model.Medicine).filter(model.Medicine.id == id).first()
+    if not existing_medicine:
+        raise HTTPException(status_code=404, detail="Medicine not found.")
 
-    for key, value in update_data.model_dump(exclude_unset=True).items():
-        setattr(medicine, key, value)
-
+    existing_medicine.name = medicine.name
+    existing_medicine.description = medicine.description
+    existing_medicine.price = medicine.price
+    existing_medicine.stock = medicine.stock
+    
     db.commit()
-    db.refresh(medicine)
-    return medicine
+    db.refresh(existing_medicine)
+    return existing_medicine
 
-# ✅ Remove a medicine
-@router.delete("/{id}", status_code=status.HTTP_200_OK)
-def delete_medicine(
-    id: int, 
-    db: Session = Depends(get_db), 
-    current_user: model.User = Depends(get_current_user)
-):
-    if current_user.role not in [UserRole.ADMIN, UserRole.PHARMACIST]:
-        raise HTTPException(status_code=403, detail="Only admins or pharmacists can remove medicines")
+# Delete a medicine
+@router.delete("/medicines/{id}")
+async def delete_medicine(id: int, db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
+    # Ensure only pharmacists or admins can delete medicines
+    if current_user.role not in [model.UserRole.PHARMACIST, model.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only pharmacists or admins can delete medicines.")
 
     medicine = db.query(model.Medicine).filter(model.Medicine.id == id).first()
     if not medicine:
-        raise HTTPException(status_code=404, detail="Medicine not found")
-
+        raise HTTPException(status_code=404, detail="Medicine not found.")
+    
     db.delete(medicine)
     db.commit()
-    return {"message": "Medicine removed successfully"}
+    return {"message": "Medicine deleted successfully."}

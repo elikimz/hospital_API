@@ -46,9 +46,10 @@ def get_financial_summary(
     if current_user.role not in [UserRole.ADMIN, UserRole.ACCOUNTANT]:
         raise HTTPException(status_code=403, detail="Only admins or accountants can view financial reports")
 
-    total_earnings = db.query(func.sum(model.Billing.amount)).scalar() or 0
-    total_paid = db.query(func.sum(model.Billing.amount)).filter(model.Billing.status == "paid").scalar() or 0
-    total_pending = total_earnings - (total_paid or 0)
+    # Assuming model.Billing exists or should be replaced with model.Payment
+    total_earnings = db.query(func.sum(model.Payment.amount)).scalar() or 0
+    total_paid = db.query(func.sum(model.Payment.amount)).filter(model.Payment.status == "SUCCESS").scalar() or 0
+    total_pending = total_earnings - total_paid
 
     return {
         "total_earnings": total_earnings,

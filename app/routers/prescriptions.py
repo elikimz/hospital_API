@@ -4,16 +4,7 @@ from app import model
 from app.database import get_db
 from app.auth import get_current_user
 from app.schema import PrescriptionCreate, PrescriptionOut
-
-router = APIRouter()
-
-# Create a Prescription
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app import model
-from app.database import get_db
-from app.auth import get_current_user
-from app.schema import PrescriptionCreate, PrescriptionOut
+from datetime import datetime
 
 router = APIRouter()
 
@@ -27,26 +18,28 @@ async def create_prescription(
     # Ensure the current user is a doctor
     if current_user.role != model.UserRole.DOCTOR:
         raise HTTPException(status_code=403, detail="Only doctors can create prescriptions.")
-
-    # Patient ID should be passed in the body by the frontend
-    patient_id = prescription.patient_id
     
-    # Check if the patient exists
-    patient = db.query(model.Patient).filter(model.Patient.id == patient_id).first()
+    # Fetch patient and medicine by name
+    patient = db.query(model.Patient).filter(model.Patient.full_name == prescription.patient_name).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found.")
     
-    # Check if the medicine exists
-    medicine = db.query(model.Medicine).filter(model.Medicine.id == prescription.medicine_id).first()
+    medicine = db.query(model.Medicine).filter(model.Medicine.name == prescription.medicine_name).first()
     if not medicine:
         raise HTTPException(status_code=404, detail="Medicine not found.")
-
+    
+    # Ensure the current user is a doctor and exists in the staff table
+    doctor = db.query(model.Staff).filter(model.Staff.user_id == current_user.id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found.")
+    
     # Create the prescription with doctor and patient details
     new_prescription = model.Prescription(
-        doctor_id=current_user.id,  # Automatically assigned from the logged-in doctor
-        patient_id=patient_id,  # Patient passed from the frontend
-        medicine_id=prescription.medicine_id,  # Passed from the frontend
-        dosage=prescription.dosage
+        doctor_id=doctor.id,  # Set the doctor_id from the logged-in doctor
+        patient_id=patient.id,  # Patient ID fetched from the database
+        medicine_id=medicine.id,  # Medicine ID fetched from the database
+        dosage=prescription.dosage,
+        created_at=datetime.utcnow()  # Set the created_at timestamp
     )
 
     # Save to database
@@ -54,8 +47,11 @@ async def create_prescription(
     db.commit()
     db.refresh(new_prescription)
 
-    return new_prescription
+    # Convert created_at to string before returning the response
+    new_prescription_dict = new_prescription.__dict__
+    new_prescription_dict["created_at"] = new_prescription_dict["created_at"].strftime('%Y-%m-%d %H:%M:%S')
 
+    return new_prescription_dict
 
 # View a Prescription
 @router.get("/prescriptions/{id}", response_model=PrescriptionOut)
@@ -63,7 +59,12 @@ async def get_prescription(id: int, db: Session = Depends(get_db)):
     prescription = db.query(model.Prescription).filter(model.Prescription.id == id).first()
     if not prescription:
         raise HTTPException(status_code=404, detail="Prescription not found.")
-    return prescription
+
+    # Convert created_at to string before returning the response
+    prescription_dict = prescription.__dict__
+    prescription_dict["created_at"] = prescription_dict["created_at"].strftime('%Y-%m-%d %H:%M:%S')
+
+    return prescription_dict
 
 # Update a Prescription
 @router.put("/prescriptions/{id}", response_model=PrescriptionOut)
@@ -86,7 +87,11 @@ async def update_prescription(
     db.commit()
     db.refresh(existing_prescription)
 
-    return existing_prescription
+    # Convert created_at to string before returning the response
+    existing_prescription_dict = existing_prescription.__dict__
+    existing_prescription_dict["created_at"] = existing_prescription_dict["created_at"].strftime('%Y-%m-%d %H:%M:%S')
+
+    return existing_prescription_dict
 
 # Delete a Prescription
 @router.delete("/prescriptions/{id}")

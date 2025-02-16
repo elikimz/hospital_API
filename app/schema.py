@@ -128,6 +128,7 @@ class MedicineCreate(BaseModel):
     name: str
     stock: int
     price: float
+    description: str 
 
 # ✅ Schema for Updating Medicine (Partial Updates Allowed)
 class MedicineUpdate(BaseModel):
@@ -173,9 +174,9 @@ class PrescriptionBase(BaseModel):
 
 # PrescriptionCreate schema
 class PrescriptionCreate(BaseModel):
-    patient_id: int  # Patient to whom the prescription is assigned
-    medicine_id: int  # Medicine prescribed
-    dosage: str  # Dosage instructions
+    patient_name: str
+    medicine_name: str
+    dosage: str
 
     class Config:
         orm_mode = True
@@ -187,7 +188,25 @@ class PrescriptionOut(BaseModel):
     patient_id: int
     medicine_id: int
     dosage: str
+    created_at: str  # This will be a string representing the datetime
+    
+    class Config:
+        orm_mode = True
+        
+    @classmethod
+    def from_orm(cls, obj):
+        # Convert the datetime to a string in ISO 8601 format
+        obj_dict = obj.__dict__
+        obj_dict['created_at'] = obj.created_at.isoformat()  # Ensure datetime is a string
+        return super().from_orm(obj)
+
+
+class MedicineOut(BaseModel):
+    id: int
+    name: str
+    stock: int
+    price: float
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        orm_mode = True       

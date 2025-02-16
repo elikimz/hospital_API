@@ -12,6 +12,7 @@ class UserRole(enum.Enum):
     RECEPTIONIST = "receptionist"
     PHARMACIST = "pharmacist"
     PATIENT = "patient"
+    ACCOUNTANT = "accountant"
 
 # User Model
 class User(Base):
