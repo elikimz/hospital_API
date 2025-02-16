@@ -44,40 +44,40 @@ def get_patient(id: int, db: Session = Depends(database.get_db)):
     return patient
 
 # Update patient details
-# @router.put("/patients/{id}", response_model=schema.Patient)
-# def update_patient(id: int, patient: schema.PatientCreate, db: Session = Depends(database.get_db), 
-#                    current_user: model.User = Depends(get_current_user)):
-#     check_if_admin_or_doctor(current_user)
+@router.put("/patients/{id}", response_model=schema.Patient)
+def update_patient(id: int, patient: schema.PatientCreate, db: Session = Depends(database.get_db), 
+                   current_user: model.User = Depends(get_current_user)):
+    check_if_admin_or_doctor(current_user)
 
-#     existing_patient = db.query(model.Patient).filter(model.Patient.id == id).first()
-#     if not existing_patient:
-#         raise HTTPException(status_code=404, detail="Patient not found")
+    existing_patient = db.query(model.Patient).filter(model.Patient.id == id).first()
+    if not existing_patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
     
-#     existing_patient.full_name = patient.full_name
-#     existing_patient.dob = patient.dob
-#     existing_patient.contact = patient.contact
+    existing_patient.full_name = patient.full_name
+    existing_patient.dob = patient.dob
+    existing_patient.contact = patient.contact
 
-#     db.commit()
-#     db.refresh(existing_patient)
+    db.commit()
+    db.refresh(existing_patient)
 
-#     return existing_patient
+    return existing_patient
 
-# # Delete patient record
-# @router.delete("/patients/{id}", response_model=schema.Patient)
-# def delete_patient(id: int, db: Session = Depends(database.get_db), 
-#                    current_user: model.User = Depends(get_current_user)):
-#     if current_user.role != UserRole.ADMIN:
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="You do not have permission to delete a patient."
-#         )
+# Delete patient record
+@router.delete("/patients/{id}", response_model=schema.Patient)
+def delete_patient(id: int, db: Session = Depends(database.get_db), 
+                   current_user: model.User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete a patient."
+        )
 
-#     patient = db.query(model.Patient).filter(model.Patient.id == id).first()
-#     if not patient:
-#         raise HTTPException(status_code=404, detail="Patient not found")
+    patient = db.query(model.Patient).filter(model.Patient.id == id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
 
-#     db.delete(patient)
-#     db.commit()
+    db.delete(patient)
+    db.commit()
 
     return patient
 @router.get("/patients/", response_model=List[schema.Patient])
