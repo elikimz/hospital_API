@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -10,8 +11,8 @@ from app.model import UserRole  # Import the UserRole Enum
 from app.config import SECRET_KEY, ALGORITHM  # Load from config.py
 
 router = APIRouter()
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
 
 # Function to determine user role based on email domain
 def assign_role(email: str) -> UserRole:
@@ -25,6 +26,7 @@ def assign_role(email: str) -> UserRole:
         return UserRole.PHARMACIST
     else:
         return UserRole.PATIENT  # Default role
+
 
 # Dependency to get the current user
 def get_current_user(db: Session = Depends(database.get_db), token: str = Depends(oauth2_scheme)):
@@ -42,53 +44,63 @@ def get_current_user(db: Session = Depends(database.get_db), token: str = Depend
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-# User Registration (Role Assigned Based on Email)
+
+# User Registration with Improved Error Handling
 @router.post("/register", response_model=schema.User)
 def register_user(user: schema.UserCreate, db: Session = Depends(database.get_db)):
     existing_user = db.query(model.User).filter(model.User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     hashed_password = hash_password(user.password)
     assigned_role = assign_role(user.email)
-    
-    new_user = model.User(
-        username=user.username,
-        email=user.email,
-        hashed_password=hashed_password,
-        role=assigned_role,
-        created_at=datetime.utcnow()
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Create corresponding records based on role
-    if assigned_role == UserRole.PATIENT:
-        new_patient = model.Patient(
-            user_id=new_user.id,
-            full_name=user.username,
-            dob=user.dob,
-            contact=user.contact,
+
+    try:
+        new_user = model.User(
+            username=user.username,
+            email=user.email,
+            hashed_password=hashed_password,
+            role=assigned_role,
             created_at=datetime.utcnow()
         )
-        db.add(new_patient)
-    elif assigned_role in {UserRole.DOCTOR, UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.PHARMACIST}:
-        new_staff = model.Staff(
-            user_id=new_user.id,
-            full_name=user.username,
-            department=str(assigned_role.value),
-            contact=user.contact,
-            is_active=True,
-            created_at=datetime.utcnow()
-        )
-        db.add(new_staff)
-    
-    db.commit()
-    return new_user
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        # Create corresponding staff or patient record
+        if assigned_role == UserRole.PATIENT:
+            new_patient = model.Patient(
+                user_id=new_user.id,
+                full_name=user.username,
+                dob=user.dob,
+                contact=user.contact,
+                created_at=datetime.utcnow()
+            )
+            db.add(new_patient)
+        else:
+            new_staff = model.Staff(
+                user_id=new_user.id,
+                full_name=user.username,
+                department=str(assigned_role.value),
+                contact=user.contact,
+                is_active=True,
+                created_at=datetime.utcnow()
+            )
+            db.add(new_staff)
+
+        db.commit()
+        return new_user
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="A database integrity error occurred. Ensure unique email and valid data.")
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
 
 # User Login (JWT Token Generation)
 @router.post("/login")
@@ -103,6 +115,7 @@ def login(
     access_token = create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(hours=1))
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 # Get Current User Info
 @router.get("/me")
 def get_user_info(current_user: model.User = Depends(get_current_user)):
@@ -112,6 +125,7 @@ def get_user_info(current_user: model.User = Depends(get_current_user)):
         "email": current_user.email,
         "role": current_user.role.value
     }
+
 
 # Update User Role (Admin Only)
 @router.put("/update-role/{user_id}")
