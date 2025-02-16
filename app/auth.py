@@ -147,6 +147,8 @@
 #     db.refresh(user)
     
 #     return {"message": f"User {user.username} role updated to {role.value}. Please log in again."}
+
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
