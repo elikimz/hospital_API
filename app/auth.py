@@ -750,7 +750,7 @@ def send_password_reset_email(email: EmailStr, token: str):
     """
 
     msg = MIMEMultipart()
-    msg['From'] = email
+    msg['From'] = SMTP_USERNAME
     msg['To'] = email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'html'))
