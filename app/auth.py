@@ -690,63 +690,12 @@ def create_password_reset_token(email: str):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def send_password_reset_email(email: EmailStr, token: str):
+def send_password_reset_email(email: str, token: str):
     subject = "Password Reset Request"
     body = f"""
-    <html>
-        <head>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f4f4;
-                    padding: 20px;
-                }}
-                .container {{
-                    background-color: #ffffff;
-                    padding: 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                    max-width: 600px;
-                    margin: 0 auto;
-                }}
-                h2 {{
-                    color: #333333;
-                    text-align: center;
-                }}
-                p {{
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #555555;
-                }}
-                .button {{
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background-color: #4CAF50;
-                    color: #ffffff;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    font-weight: bold;
-                    margin-top: 20px;
-                    text-align: center;
-                }}
-                .footer {{
-                    font-size: 12px;
-                    color: #888888;
-                    text-align: center;
-                    margin-top: 30px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>Password Reset Request</h2>
-                <p>You have requested to reset your password. Please click the link below to reset your password:</p>
-                <p><a href="http://yourapp.com/reset-password?token={token}" class="button">Reset Password</a></p>
-                <p>This link will expire in 30 minutes.</p>
-                <p class="footer">If you did not request this, please ignore this email or contact support.</p>
-            </div>
-        </body>
-    </html>
+    <p>You have requested to reset your password. Please click the link below to reset your password:</p>
+    <p><a href="http://yourapp.com/reset-password?token={token}">Reset Password</a></p>
+    <p>This link will expire in 30 minutes.</p>
     """
 
     msg = MIMEMultipart()
@@ -756,11 +705,10 @@ def send_password_reset_email(email: EmailStr, token: str):
     msg.attach(MIMEText(body, 'html'))
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()  # Secure connection
-        server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        server.sendmail(SMTP_USERNAME, email, msg.as_string())
-        server.quit()
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()  # Secure connection
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(SMTP_USERNAME, email, msg.as_string())
     except Exception as e:
         print(f"SMTP Error: {e}")  # Print exact error to debug
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
