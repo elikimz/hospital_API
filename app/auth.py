@@ -693,9 +693,35 @@ def create_password_reset_token(email: str):
 def send_password_reset_email(email: str, token: str):
     subject = "Password Reset Request"
     body = f"""
-    <p>You have requested to reset your password. Please click the link below to reset your password:</p>
-    <p><a href="http://yourapp.com/reset-password?token={token}">Reset Password</a></p>
-    <p>This link will expire in 30 minutes.</p>
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+            <h2 style="text-align: center; color: #333;">Password Reset Request</h2>
+            <p style="font-size: 16px; color: #555;">
+                Hi there,
+            </p>
+            <p style="font-size: 16px; color: #555;">
+                You have requested to reset your password. Please click the link below to reset your password:
+            </p>
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="http://yourapp.com/reset-password?token={token}" 
+                   style="font-size: 18px; font-weight: bold; color: #fff; background-color: #007bff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Reset Password
+                </a>
+            </p>
+            <p style="font-size: 16px; color: #555; margin-top: 20px;">
+                This link will expire in 30 minutes.
+            </p>
+            <p style="font-size: 14px; color: #888; text-align: center; margin-top: 40px;">
+                If you did not request a password reset, please ignore this email.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #ddd; margin-top: 40px;">
+            <p style="font-size: 12px; color: #777; text-align: center;">
+                If you have any questions, feel free to contact our support team.
+            </p>
+        </div>
+    </body>
+    </html>
     """
 
     msg = MIMEMultipart()
@@ -712,6 +738,7 @@ def send_password_reset_email(email: str, token: str):
     except Exception as e:
         print(f"SMTP Error: {e}")  # Print exact error to debug
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
 
 
 @router.post("/request-password-reset")
