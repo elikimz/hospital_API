@@ -528,14 +528,14 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app import model, schema, database
 from app.utils import verify_password, create_access_token, hash_password
-from app.model import UserRole
+from app.model import User, UserRole
 from app.config import SECRET_KEY, ALGORITHM, SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD
 
 router = APIRouter()
@@ -623,16 +623,22 @@ def register_user(user: schema.UserCreate, db: Session = Depends(database.get_db
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # Login Endpoint (JWT Token Generation)
+
+
 @router.post("/login")
-def login(
+async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(database.get_db)
 ):
+    print(f"✅ Received login request: username={form_data.username}, password={form_data.password}")
+
     db_user = db.query(model.User).filter(model.User.email == form_data.username).first()
     if not db_user or not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
     access_token = create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(hours=1))
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 # Get Current User Info
 @router.get("/me")
@@ -741,13 +747,32 @@ def send_password_reset_email(email: str, token: str):
 
 
 
+# @router.post("/request-password-reset")
+# def request_password_reset(email: EmailStr, db: Session = Depends(database.get_db)):
+#     user = db.query(model.User).filter(model.User.email == email).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     reset_token = create_password_reset_token(email)
+#     send_password_reset_email(email, reset_token)
+    
+#     return {"message": "Password reset email sent"}
+
+
+
+
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
 @router.post("/request-password-reset")
-def request_password_reset(email: EmailStr, db: Session = Depends(database.get_db)):
-    user = db.query(model.User).filter(model.User.email == email).first()
+def request_password_reset(request: PasswordResetRequest, db: Session = Depends(database.get_db)):
+    user = db.query(User).filter(User.email == request.email).first()  # FIXED: Correct variable reference
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    reset_token = create_password_reset_token(email)
-    send_password_reset_email(email, reset_token)
+    reset_token = create_password_reset_token(user.email)  # Use user.email
+    send_password_reset_email(user.email, reset_token)  # Use user.email
     
     return {"message": "Password reset email sent"}
