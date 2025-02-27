@@ -135,3 +135,6 @@ class Report(Base):
     report_type = Column(String, nullable=False)
     details = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+

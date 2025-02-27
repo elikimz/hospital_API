@@ -9,7 +9,7 @@ from datetime import datetime
 router = APIRouter()
 
 # Create a Prescription
-@router.post("/prescriptions/", response_model=PrescriptionOut)
+@router.post("/", response_model=PrescriptionOut)
 async def create_prescription(
     prescription: PrescriptionCreate,
     db: Session = Depends(get_db),
@@ -54,7 +54,7 @@ async def create_prescription(
     return new_prescription_dict
 
 # View a Prescription
-@router.get("/prescriptions/{id}", response_model=PrescriptionOut)
+@router.get("/{id}", response_model=PrescriptionOut)
 async def get_prescription(id: int, db: Session = Depends(get_db)):
     prescription = db.query(model.Prescription).filter(model.Prescription.id == id).first()
     if not prescription:
@@ -67,7 +67,7 @@ async def get_prescription(id: int, db: Session = Depends(get_db)):
     return prescription_dict
 
 # Update a Prescription
-@router.put("/prescriptions/{id}", response_model=PrescriptionOut)
+@router.put("/{id}", response_model=PrescriptionOut)
 async def update_prescription(
     id: int,
     prescription: PrescriptionCreate,
@@ -94,7 +94,7 @@ async def update_prescription(
     return existing_prescription_dict
 
 # Delete a Prescription
-@router.delete("/prescriptions/{id}")
+@router.delete("/{id}")
 async def delete_prescription(id: int, db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
     # Ensure that only doctors or admins can delete prescriptions
     if current_user.role not in [model.UserRole.DOCTOR, model.UserRole.ADMIN]:

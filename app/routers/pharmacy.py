@@ -8,7 +8,7 @@ from app.schema import MedicineCreate, MedicineOut
 router = APIRouter()
 
 # Add a new medicine
-@router.post("/medicines/", response_model=MedicineOut)
+@router.post("/", response_model=MedicineOut)
 async def add_medicine(
     medicine: MedicineCreate,
     db: Session = Depends(get_db),
@@ -30,13 +30,13 @@ async def add_medicine(
     return new_medicine
 
 # Retrieve all medicines
-@router.get("/medicines/", response_model=list[MedicineOut])
+@router.get("/", response_model=list[MedicineOut])
 async def get_all_medicines(db: Session = Depends(get_db)):
     medicines = db.query(model.Medicine).all()
     return medicines
 
 # Retrieve a single medicine
-@router.get("/medicines/{id}", response_model=MedicineOut)
+@router.get("/{id}", response_model=MedicineOut)
 async def get_medicine(id: int, db: Session = Depends(get_db)):
     medicine = db.query(model.Medicine).filter(model.Medicine.id == id).first()
     if not medicine:
@@ -44,7 +44,7 @@ async def get_medicine(id: int, db: Session = Depends(get_db)):
     return medicine
 
 # Update a medicine
-@router.put("/medicines/{id}", response_model=MedicineOut)
+@router.put("/{id}", response_model=MedicineOut)
 async def update_medicine(
     id: int,
     medicine: MedicineCreate,
@@ -69,7 +69,7 @@ async def update_medicine(
     return existing_medicine
 
 # Delete a medicine
-@router.delete("/medicines/{id}")
+@router.delete("/{id}")
 async def delete_medicine(id: int, db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
     # Ensure only pharmacists or admins can delete medicines
     if current_user.role not in [model.UserRole.PHARMACIST, model.UserRole.ADMIN]:

@@ -21,10 +21,8 @@ stripe.api_key = STRIPE_SECRET_KEY
 
 router = APIRouter()
 
-# OAuth2 Bearer token dependency for authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-# Dependency to get DB session
 def get_db():
     db = database.SessionLocal()
     try:
@@ -32,41 +30,40 @@ def get_db():
     finally:
         db.close()
 
-# Helper function to calculate the patient's bill (implement logic based on your system)
+# Helper function to calculate the patient’s bill
 def calculate_patient_bill(patient_id: int, db: Session) -> float:
-    # Example calculation based on prescriptions, appointments, etc.
     prescriptions = db.query(model.Prescription).filter(model.Prescription.patient_id == patient_id).all()
-    appointment_fees = 0  # Example of appointment fees calculation
-
-    total_bill = appointment_fees
+    appointment_fees = 0
+    
+    print(f"Found {len(prescriptions)} prescriptions for Patient ID: {patient_id}")
     for prescription in prescriptions:
-        total_bill += prescription.medicine.price  # Add the medicine price for each prescription
-
-    return total_bill
+        print(f"Prescription ID: {prescription.id}, Medicine ID: {prescription.medicine_id}")
+        appointment_fees += prescription.medicine.price
+    
+    return appointment_fees
 
 # Create Stripe Checkout Session
 @router.post("/payments/create-checkout-session/")
 async def create_checkout_session(db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
-    print(f"Current User ID: {current_user.id}")  # Log the user ID
+    print(f"Current User ID: {current_user.id}")
     
-    # Fetch the patient associated with the current authenticated user
     patient = db.query(model.Patient).filter(model.Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     
-    # Calculate the patient's total bill dynamically
+    print(f"Patient ID: {patient.id}, Full Name: {patient.full_name}")
+    
     patient_total_bill = calculate_patient_bill(patient.id, db)
     if patient_total_bill <= 0:
         raise HTTPException(status_code=400, detail="Invalid bill amount")
 
-    # Create Stripe checkout session
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
             "price_data": {
                 "currency": "usd",
                 "product_data": {"name": "Hospital Payment"},
-                "unit_amount": int(patient_total_bill * 100),  # Convert to cents
+                "unit_amount": int(patient_total_bill * 100),
             },
             "quantity": 1,
         }],
@@ -75,7 +72,6 @@ async def create_checkout_session(db: Session = Depends(get_db), current_user: m
         cancel_url=f"https://your-frontend.com/payment-failed/{patient.id}",
     )
 
-    # Save payment record in the database
     new_payment = model.Payment(
         patient_id=patient.id,
         amount=patient_total_bill,
@@ -86,32 +82,38 @@ async def create_checkout_session(db: Session = Depends(get_db), current_user: m
     db.commit()
     db.refresh(new_payment)
 
+    print(f"Payment record created: Payment ID: {new_payment.id}, Amount: {new_payment.amount}")
+    
     return {"checkout_url": session.url}
 
+# Stripe Webhook
 @router.post("/webhook/")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
-    # Verify the webhook signature
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
-    # Handle the event
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
 
-        # Find payment in database
         payment = db.query(model.Payment).filter(model.Payment.stripe_session_id == session["id"]).first()
         if payment:
             payment.status = PaymentStatus.SUCCESS
             db.commit()
 
-            # Find the patient associated with the payment
             patient = db.query(model.Patient).filter(model.Patient.id == payment.patient_id).first()
             if patient:
-                print(f"Payment successful for Patient: ID={patient.id}, Name={patient.full_name}, Contact={patient.contact}")
+                print(f"Payment successful for Patient: ID={patient.id}, Name={patient.full_name}")
+                prescriptions = db.query(model.Prescription).filter(model.Prescription.patient_id == patient.id).all()
+                
+                if prescriptions:
+                    for prescription in prescriptions:
+                        print(f"Prescription ID: {prescription.id}, Medicine ID: {prescription.medicine_id}")
+                else:
+                    print(f"No prescriptions found for Patient ID: {patient.id}")
     
     return {"status": "success"}

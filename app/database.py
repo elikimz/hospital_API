@@ -26,5 +26,5 @@ def get_db():
     finally:
         db.close()
 # Import all models here so Alembic detects them
-# from app.model import User, Patient, Staff, Appointment, Payment, Medicine, Prescription
+# from app.model import User, Patient, Staff, Appointment, Payment, Medicine, Prescription,AuditLog
 from app import model
