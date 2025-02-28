@@ -2,6 +2,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from app import schema
+from app.config import SECRET_KEY, ALGORITHM
 
 # Password hashing and verification
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -13,8 +14,8 @@ def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
 # JWT token generation
-SECRET_KEY = "your_"
-ALGORITHM = "HS256"
+# SECRET_KEY = "your_"
+# ALGORITHM = "HS256"
 
 def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=30)):
     to_encode = data.copy()
