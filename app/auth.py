@@ -99,6 +99,23 @@ def register_user(user: schema.UserCreate, db: Session = Depends(database.get_db
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # Login Endpoint (JWT Token Generation)
+# @router.post("/login")
+# async def login(
+#     form_data: OAuth2PasswordRequestForm = Depends(),
+#     db: Session = Depends(database.get_db)
+# ):
+#     print(f"✅ Received login request: username={form_data.username}, password={form_data.password}")
+
+#     db_user = db.query(model.User).filter(model.User.email == form_data.username).first()
+#     if not db_user or not verify_password(form_data.password, db_user.hashed_password):
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+#     access_token = create_access_token(
+#         data={"sub": db_user.email}, expires_delta=timedelta(hours=1))
+#     return {"access_token": access_token, "token_type": "bearer"}
+
+
+
 @router.post("/login")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -110,8 +127,19 @@ async def login(
     if not db_user or not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token = create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(hours=1))
+    # Add all the user fields you want to include in the token
+    access_token = create_access_token(
+        data={
+            "id": db_user.id,
+            "username": db_user.username,
+            "email": db_user.email,
+            "role": db_user.role.value,
+            "created_at": db_user.created_at.isoformat(),
+        },
+        expires_delta=timedelta(hours=1)
+    )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 # Get Current User Info
 @router.get("/me")
