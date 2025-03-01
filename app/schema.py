@@ -60,6 +60,12 @@ class Patient(BaseModel):
     class Config:
         orm_mode = True
 
+
+class PatientUpdate(BaseModel):
+    full_name: str
+    dob: date  # 👈 This enforces a proper date format
+    contact: str
+
 # -------------------------------
 # Staff Schemas
 # -------------------------------
