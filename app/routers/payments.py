@@ -33,7 +33,7 @@ def get_db():
 # Helper function to calculate the patient’s bill
 def calculate_patient_bill(patient_id: int, db: Session) -> float:
     prescriptions = db.query(model.Prescription).filter(model.Prescription.patient_id == patient_id).all()
-    appointment_fees = 0
+    appointment_fees = 50
     
     print(f"Found {len(prescriptions)} prescriptions for Patient ID: {patient_id}")
     for prescription in prescriptions:

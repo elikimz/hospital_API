@@ -15,7 +15,7 @@ def get_db():
         db.close()
 
 # ✅ Get overall hospital statistics
-@router.get("/overview")
+@router.get("/")
 def get_hospital_overview(
     db: Session = Depends(get_db), 
     current_user: model.User = Depends(get_current_user)
@@ -38,7 +38,7 @@ def get_hospital_overview(
     }
 
 # ✅ Get financial summary (Total earnings & pending payments)
-@router.get("/financial-summary")
+@router.get("/")
 def get_financial_summary(
     db: Session = Depends(get_db), 
     current_user: model.User = Depends(get_current_user)
@@ -58,7 +58,7 @@ def get_financial_summary(
     }
 
 # ✅ Get daily appointment statistics
-@router.get("/appointments/daily")
+@router.get("/")
 def get_daily_appointments(
     db: Session = Depends(get_db), 
     current_user: model.User = Depends(get_current_user)
