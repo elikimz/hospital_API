@@ -64,7 +64,7 @@ def get_daily_appointments(
     current_user: model.User = Depends(get_current_user)
 ):
     if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.DOCTOR]:
-        raise HTTPException(status_code=403, detail="Only authorized staff can view appointments")
+        raise HTTPException(status_code=403, detail="Only authorized staf can view appointments")
 
     daily_appointments = (
         db.query(func.date(model.Appointment.date), func.count(model.Appointment.id))
