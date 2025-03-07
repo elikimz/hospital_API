@@ -35,7 +35,7 @@ jobs:
         run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: python-app
           path: |
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-app
 
@@ -64,4 +64,4 @@ jobs:
         with:
           app-name: 'hospitalAPI'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F000307F5BF64BA1851218DB79CD8DF6 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7CB4110139B341CF98E27A3FEB417D1B }}
