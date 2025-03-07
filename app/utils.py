@@ -25,8 +25,6 @@
 #     return encoded_jwt
 
 
-
-    
 # from passlib.context import CryptContext
 # from datetime import datetime, timedelta
 # from jose import JWTError, jwt
@@ -50,7 +48,6 @@
 #     return encoded_jwt
 
 
-
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
@@ -58,6 +55,7 @@ from app.config import SECRET_KEY, ALGORITHM
 
 # Password hashing and verification
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def hash_password(password: str):
     return pwd_context.hash(password)

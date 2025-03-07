@@ -18,6 +18,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for declarative models
 Base = declarative_base()
 
+
 # Dependency to get the session
 def get_db():
     db = SessionLocal()
@@ -25,6 +26,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
 # Import all models here so Alembic detects them
 # from app.model import User, Patient, Staff, Appointment, Payment, Medicine, Prescription,AuditLog
 from app import model

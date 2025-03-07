@@ -18,21 +18,21 @@
 #     # Ensure the current user is a doctor
 #     if current_user.role != model.UserRole.DOCTOR:
 #         raise HTTPException(status_code=403, detail="Only doctors can create prescriptions.")
-    
+
 #     # Fetch patient and medicine by name
 #     patient = db.query(model.Patient).filter(model.Patient.full_name == prescription.patient_name).first()
 #     if not patient:
 #         raise HTTPException(status_code=404, detail="Patient not found.")
-    
+
 #     medicine = db.query(model.Medicine).filter(model.Medicine.name == prescription.medicine_name).first()
 #     if not medicine:
 #         raise HTTPException(status_code=404, detail="Medicine not found.")
-    
+
 #     # Ensure the current user is a doctor and exists in the staff table
 #     doctor = db.query(model.Staff).filter(model.Staff.user_id == current_user.id).first()
 #     if not doctor:
 #         raise HTTPException(status_code=404, detail="Doctor not found.")
-    
+
 #     # Create the prescription with doctor and patient details
 #     new_prescription = model.Prescription(
 #         doctor_id=doctor.id,  # Set the doctor_id from the logged-in doctor
@@ -110,7 +110,6 @@
 #     return {"message": "Prescription deleted successfully."}
 
 
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from app import model
@@ -121,28 +120,41 @@ from datetime import datetime
 
 router = APIRouter()
 
+
 # Create a Prescription
 @router.post("/", response_model=PrescriptionOut)
 async def create_prescription(
     prescription: PrescriptionCreate,
     db: Session = Depends(get_db),
-    current_user: model.User = Depends(get_current_user)
+    current_user: model.User = Depends(get_current_user),
 ):
     # Ensure the current user is a doctor
     if current_user.role != model.UserRole.DOCTOR:
-        raise HTTPException(status_code=403, detail="Only doctors can create prescriptions.")
+        raise HTTPException(
+            status_code=403, detail="Only doctors can create prescriptions."
+        )
 
     # Fetch patient and medicine by name
-    patient = db.query(model.Patient).filter(model.Patient.full_name == prescription.patient_name).first()
+    patient = (
+        db.query(model.Patient)
+        .filter(model.Patient.full_name == prescription.patient_name)
+        .first()
+    )
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found.")
 
-    medicine = db.query(model.Medicine).filter(model.Medicine.name == prescription.medicine_name).first()
+    medicine = (
+        db.query(model.Medicine)
+        .filter(model.Medicine.name == prescription.medicine_name)
+        .first()
+    )
     if not medicine:
         raise HTTPException(status_code=404, detail="Medicine not found.")
 
     # Ensure the current user is a doctor and exists in the staff table
-    doctor = db.query(model.Staff).filter(model.Staff.user_id == current_user.id).first()
+    doctor = (
+        db.query(model.Staff).filter(model.Staff.user_id == current_user.id).first()
+    )
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
@@ -152,7 +164,7 @@ async def create_prescription(
         patient_id=patient.id,  # Patient ID fetched from the database
         medicine_id=medicine.id,  # Medicine ID fetched from the database
         dosage=prescription.dosage,
-        created_at=datetime.utcnow()  # Set the created_at timestamp
+        created_at=datetime.utcnow(),  # Set the created_at timestamp
     )
 
     # Save to database
@@ -169,19 +181,25 @@ async def create_prescription(
         "patient_name": patient.full_name,
         "medicine_name": medicine.name,
         "dosage": new_prescription.dosage,
-        "created_at": new_prescription.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        "created_at": new_prescription.created_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     return new_prescription_dict
+
 
 # View a Prescription
 @router.get("/{id}", response_model=PrescriptionOut)
 async def get_prescription(id: int, db: Session = Depends(get_db)):
     # Join with patient and medicine tables to get names
-    prescription = db.query(model.Prescription).options(
-        joinedload(model.Prescription.patient),
-        joinedload(model.Prescription.medicine)
-    ).filter(model.Prescription.id == id).first()
+    prescription = (
+        db.query(model.Prescription)
+        .options(
+            joinedload(model.Prescription.patient),
+            joinedload(model.Prescription.medicine),
+        )
+        .filter(model.Prescription.id == id)
+        .first()
+    )
 
     if not prescription:
         raise HTTPException(status_code=404, detail="Prescription not found.")
@@ -195,10 +213,11 @@ async def get_prescription(id: int, db: Session = Depends(get_db)):
         "patient_name": prescription.patient.full_name,
         "medicine_name": prescription.medicine.name,
         "dosage": prescription.dosage,
-        "created_at": prescription.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        "created_at": prescription.created_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     return prescription_dict
+
 
 # Update a Prescription
 @router.put("/{id}", response_model=PrescriptionOut)
@@ -206,16 +225,23 @@ async def update_prescription(
     id: int,
     prescription: PrescriptionCreate,
     db: Session = Depends(get_db),
-    current_user: model.User = Depends(get_current_user)
+    current_user: model.User = Depends(get_current_user),
 ):
     # Ensure that only doctors can update prescriptions
     if current_user.role != model.UserRole.DOCTOR:
-        raise HTTPException(status_code=403, detail="Only doctors can update prescriptions.")
+        raise HTTPException(
+            status_code=403, detail="Only doctors can update prescriptions."
+        )
 
-    existing_prescription = db.query(model.Prescription).options(
-        joinedload(model.Prescription.patient),
-        joinedload(model.Prescription.medicine)
-    ).filter(model.Prescription.id == id).first()
+    existing_prescription = (
+        db.query(model.Prescription)
+        .options(
+            joinedload(model.Prescription.patient),
+            joinedload(model.Prescription.medicine),
+        )
+        .filter(model.Prescription.id == id)
+        .first()
+    )
 
     if not existing_prescription:
         raise HTTPException(status_code=404, detail="Prescription not found.")
@@ -234,19 +260,28 @@ async def update_prescription(
         "patient_name": existing_prescription.patient.full_name,
         "medicine_name": existing_prescription.medicine.name,
         "dosage": existing_prescription.dosage,
-        "created_at": existing_prescription.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        "created_at": existing_prescription.created_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     return updated_prescription_dict
 
+
 # Delete a Prescription
 @router.delete("/{id}")
-async def delete_prescription(id: int, db: Session = Depends(get_db), current_user: model.User = Depends(get_current_user)):
+async def delete_prescription(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: model.User = Depends(get_current_user),
+):
     # Ensure that only doctors or admins can delete prescriptions
     if current_user.role not in [model.UserRole.DOCTOR, model.UserRole.ADMIN]:
-        raise HTTPException(status_code=403, detail="Only doctors or admins can delete prescriptions.")
+        raise HTTPException(
+            status_code=403, detail="Only doctors or admins can delete prescriptions."
+        )
 
-    prescription = db.query(model.Prescription).filter(model.Prescription.id == id).first()
+    prescription = (
+        db.query(model.Prescription).filter(model.Prescription.id == id).first()
+    )
     if not prescription:
         raise HTTPException(status_code=404, detail="Prescription not found.")
 

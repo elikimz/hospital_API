@@ -1,8 +1,8 @@
-
 from datetime import date, datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from enum import Enum
+
 
 # -------------------------------
 # User Schemas
@@ -15,9 +15,11 @@ class RoleEnum(str, Enum):
     pharmacist = "pharmacist"
     patient = "patient"
 
+
 class UserBase(BaseModel):
     username: str
     email: str
+
 
 class UserCreate(BaseModel):
     username: str
@@ -27,15 +29,18 @@ class UserCreate(BaseModel):
     contact: str
     full_name: str
 
+
 class UserLogin(BaseModel):
     email: str
     password: str
+
 
 class User(UserBase):
     id: int
 
     class Config:
         orm_mode = True
+
 
 # -------------------------------
 # Patient Schemas
@@ -48,6 +53,7 @@ class PatientCreate(BaseModel):
     class Config:
         orm_mode = True
 
+
 class Patient(BaseModel):
     id: int
     full_name: str
@@ -57,10 +63,12 @@ class Patient(BaseModel):
     class Config:
         orm_mode = True
 
+
 class PatientUpdate(BaseModel):
     full_name: str
     dob: date  # Enforces a proper date format
     contact: str
+
 
 # -------------------------------
 # Staff Schemas
@@ -73,6 +81,7 @@ class UserRoleEnum(str, Enum):
     PHARMACIST = "pharmacist"
     PATIENT = "patient"
 
+
 class StaffCreate(BaseModel):
     username: str
     email: EmailStr
@@ -82,10 +91,12 @@ class StaffCreate(BaseModel):
     contact: str
     role: UserRoleEnum
 
+
 class StaffUpdate(BaseModel):
     full_name: Optional[str] = None
     department: Optional[str] = None
     contact: Optional[str] = None
+
 
 class StaffResponse(BaseModel):
     id: int
@@ -96,6 +107,7 @@ class StaffResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 # -------------------------------
 # Appointment Schemas
@@ -108,16 +120,19 @@ class AppointmentCreate(BaseModel):
     appointment_type: str = "physical"
     notes: Optional[str] = None
 
+
 class AppointmentUpdate(BaseModel):
     date: datetime
     reason: str
     notes: Optional[str] = None
+
 
 # Schema for rescheduling an appointment
 class AppointmentReschedule(BaseModel):
     date: datetime
     reason: str
     notes: Optional[str] = None
+
 
 class AppointmentResponse(BaseModel):
     id: int
@@ -134,6 +149,7 @@ class AppointmentResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 # -------------------------------
 # Medicine Schemas
 # -------------------------------
@@ -143,10 +159,12 @@ class MedicineCreate(BaseModel):
     price: float
     description: str
 
+
 class MedicineUpdate(BaseModel):
     name: Optional[str] = None
     stock: Optional[int] = None
     price: Optional[float] = None
+
 
 class MedicineResponse(BaseModel):
     id: int
@@ -158,6 +176,7 @@ class MedicineResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
 class MedicineOut(BaseModel):
     id: int
     name: str
@@ -167,6 +186,7 @@ class MedicineOut(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 # -------------------------------
 # Prescription Schemas
@@ -178,6 +198,7 @@ class PrescriptionBase(BaseModel):
     class Config:
         orm_mode = True
 
+
 class PrescriptionCreate(BaseModel):
     patient_name: str
     medicine_name: str
@@ -185,6 +206,7 @@ class PrescriptionCreate(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 class PrescriptionOut(BaseModel):
     id: int
@@ -202,8 +224,5 @@ class PrescriptionOut(BaseModel):
     @classmethod
     def from_orm(cls, obj):
         obj_dict = obj.__dict__
-        obj_dict['created_at'] = obj.created_at.isoformat()
+        obj_dict["created_at"] = obj.created_at.isoformat()
         return super().from_orm(obj)
-
-
-
