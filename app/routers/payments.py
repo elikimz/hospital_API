@@ -83,8 +83,8 @@ async def create_checkout_session(
             }
         ],
         mode="payment",
-        success_url=f"https://your-frontend.com/payment-success/{patient.id}",
-        cancel_url=f"https://your-frontend.com/payment-failed/{patient.id}",
+        success_url=f"https://hospital-management-frontend-gray.vercel.app/payment-success/{patient.id}",
+        cancel_url=f"https://hospital-management-frontend-gray.vercel.app/{patient.id}",
     )
 
     new_payment = model.Payment(
