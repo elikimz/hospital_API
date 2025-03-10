@@ -112,7 +112,7 @@
 #     date: datetime
 #     duration: int = 30
 #     reason: str
-#     doctor_id: str
+#     doctor_id: int
 #     appointment_type: str = "physical"
 #     notes: Optional[str] = None
 
@@ -121,7 +121,6 @@
 #     reason: str
 #     notes: Optional[str] = None
 
-# # Schema for rescheduling an appointment
 # class AppointmentReschedule(BaseModel):
 #     date: datetime
 #     reason: str
@@ -141,6 +140,12 @@
 
 #     class Config:
 #         from_attributes = True
+
+# class AppointmentResponseWithPatient(AppointmentResponse):
+#     patient: PatientWithUser
+
+#     class Config:
+#         orm_mode = True
 
 # # -------------------------------
 # # Medicine Schemas
@@ -273,9 +278,9 @@ class Patient(BaseModel):
         orm_mode = True
 
 class PatientUpdate(BaseModel):
-    full_name: str
-    dob: date  # Enforces a proper date format
-    contact: str
+    full_name: Optional[str] = None
+    dob: Optional[date] = None  # Enforces a proper date format
+    contact: Optional[str] = None
 
 class PatientWithUser(Patient):
     user: User
