@@ -78,6 +78,22 @@ def get_all_staff(
     return db.query(model.Staff).all()
 
 
+
+@router.get("/doctors", response_model=list[schema.StaffResponse])
+def get_all_doctors(
+    db: Session = Depends(get_db),
+    current_user: model.User = Depends(auth.get_current_user),
+):
+    doctors = (
+        db.query(model.Staff)
+        .join(model.User)
+        .filter(model.User.role == model.UserRole.DOCTOR)
+        .all()
+    )
+
+    return doctors
+
+
 # ✅ Get staff by ID
 @router.get("/{id}", response_model=schema.StaffResponse)
 def get_staff(
@@ -122,6 +138,11 @@ def update_staff(
     return db_staff
 
 
+
+
+
+
+
 # ✅ Delete staff (Admin Only)
 @router.delete("/{id}")
 def delete_staff(
@@ -139,3 +160,6 @@ def delete_staff(
     db.delete(db_staff)
     db.commit()
     return {"message": "Staff deleted successfully"}
+
+
+
