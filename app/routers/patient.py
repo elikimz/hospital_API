@@ -1,63 +1,4 @@
-# from typing import List
-# from fastapi import APIRouter, Depends, HTTPException, status
-# from sqlalchemy.orm import Session
-# from app import model, schema, database
-# from app.auth import get_current_user
-# from app.model import UserRole
 
-# router = APIRouter()
-
-# # Dependency to check if user is admin or doctor
-# def check_if_admin_or_doctor(current_user: model.User = Depends(get_current_user)):
-#     if current_user.role not in [UserRole.ADMIN, UserRole.DOCTOR]:
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="You do not have permission to create, update or delete a patient."
-#         )
-
-
-# @router.get("/", response_model=List[schema.Patient])
-# def get_all_patients(db: Session = Depends(database.get_db),
-#                      current_user: model.User = Depends(get_current_user)):
-#     # Only Admin or Doctor can view all patients
-#     if current_user.role not in [UserRole.ADMIN, UserRole.DOCTOR]:
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="You do not have permissionn to view all patients."
-#         )
-
-#     # Fetch all patients
-#     patients = db.query(model.Patient).all()
-#     return patients
-
-
-# @router.get("/{id}", response_model=schema.Patient)
-# def get_patient(id: int, db: Session = Depends(database.get_db)):
-#     patient = db.query(model.Patient).filter(model.Patient.id == id).first()
-#     if not patient:
-#         raise HTTPException(status_code=404, detail="Patient not found")
-
-#     return patient
-
-
-# # Delete patient record
-# @router.delete("/{id}", response_model=schema.Patient)
-# def delete_patient(id: int, db: Session = Depends(database.get_db),
-#                    current_user: model.User = Depends(get_current_user)):
-#     if current_user.role != UserRole.ADMIN:
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="You do not have permission to delete a patient."
-#         )
-
-#     patient = db.query(model.Patient).filter(model.Patient.id == id).first()
-#     if not patient:
-#         raise HTTPException(status_code=404, detail="Patient not found")
-
-#     db.delete(patient)
-#     db.commit()
-
-#     return patient
 
 
 from typing import List
@@ -80,7 +21,32 @@ def check_if_admin_or_doctor(current_user: model.User = Depends(get_current_user
         )
 
 
-@router.get("/", response_model=List[schema.Patient])
+# @router.get("/", response_model=List[schema.Patient])
+# def get_all_patients(
+#     db: Session = Depends(database.get_db),
+#     current_user: model.User = Depends(get_current_user),
+# ):
+#     if current_user.role not in [UserRole.ADMIN, UserRole.DOCTOR]:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="You do not have permission to view all patients.",
+#         )
+
+#     patients = db.query(model.Patient).all()
+#     return patients
+
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import DataError
+from sqlalchemy.orm import joinedload
+from app import model, schema, database
+from app.auth import get_current_user
+from app.model import UserRole
+
+router = APIRouter()
+
+@router.get("/", response_model=List[schema.PatientWithUser])
 def get_all_patients(
     db: Session = Depends(database.get_db),
     current_user: model.User = Depends(get_current_user),
@@ -91,8 +57,12 @@ def get_all_patients(
             detail="You do not have permission to view all patients.",
         )
 
-    patients = db.query(model.Patient).all()
+    # Fetch patients with their associated user details
+    patients = db.query(model.Patient).options(joinedload(model.Patient.user)).all()
+
     return patients
+
+
 
 
 @router.get("/{id}", response_model=schema.Patient)
@@ -161,5 +131,3 @@ def delete_patient(
 
     return patient
 
-
-# Let me know if you want any more tweaks or improvements! 🚀
