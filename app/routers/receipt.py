@@ -34,7 +34,7 @@ def get_receipt(payment_id: int, db: Session = Depends(get_db), current_user: mo
         "patientId": patient.id,
         "paymentId": payment.id,
         "paymentDate": payment.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(payment, "created_at") else datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        "paymentMethod": "Stripe Card Payment",
+        "paymentMethod": "Stripe Card Payments",
         "amount": payment.amount,
         "notes": "Thank you for your payment!",
     }
