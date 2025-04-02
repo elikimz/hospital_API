@@ -435,3 +435,24 @@ class PrescriptionOut(BaseModel):
         obj_dict = obj.__dict__
         obj_dict["created_at"] = obj.created_at.isoformat()
         return super().from_orm(obj)
+    
+
+    
+# # Contact Schema for Creating a Contact
+# class ContactCreate(BaseModel):
+#     full_name: str
+#     email: EmailStr
+#     phone: str
+#     message: str
+
+# # Contact Schema for Response
+# class ContactOut(BaseModel):
+#     id: int
+#     full_name: str
+#     email: EmailStr
+#     phone: str
+#     message: str
+#     created_at: datetime
+
+#     class Config:
+#         from_attributes = True

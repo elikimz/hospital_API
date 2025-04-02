@@ -181,3 +181,13 @@ class Report(Base):
     report_type = Column(String, nullable=False)
     details = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# Contact Model
+class Contact(Base):
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

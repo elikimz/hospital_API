@@ -10,6 +10,7 @@ from .routers import (
     payments,
     reports,
     receipt,
+    
 )
 
 # Create FastAPI app
@@ -24,6 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Hospital Management System API"}
+
 # Include routers for various routes
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(staff.router, prefix="/staff", tags=["staff"])
@@ -34,6 +40,7 @@ app.include_router(pharmacy.router, prefix="/pharmacy", tags=["pharmacy"])
 app.include_router(payments.router, prefix="/payments", tags=["Payments"])
 app.include_router(receipt.router, tags=["receipts"])
 app.include_router(reports.router, tags=["reports"])
+
 
 
 # app.include_router(SMS.router, prefix="/sms", tags=["sms"])

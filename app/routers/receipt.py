@@ -33,8 +33,8 @@ def get_all_receipts(
     receipts = []
     for payment in payments:
         receipt_data = {
-            "hospitalName": "City Hospital",  # You might load this from config or a Hospital model
-            "hospitalAddress": "123 Health Blvd, Wellness City",
+            "hospitalName": "MediCare Hospital",  # You might load this from config or a Hospital model
+            "hospitalAddress": "123 Health ",
             "hospitalContact": "555-1234",
             "patientName": patient.full_name,
             "patientId": patient.id,
